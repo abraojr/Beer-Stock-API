@@ -41,10 +41,21 @@ public class BeerService {
                 .collect(Collectors.toList());
     }
 
+    public void deleteById(Long id) throws BeerNotFoundException {
+        verifyIfExists(id);
+        beerRepository.deleteById(id);
+    }
+
     private void verifyIfIsAlreadyRegistered(BeerDTO beerDTO) throws BeerAlreadyRegisteredException {
         Optional<Beer> optSavedBeer = beerRepository.findByName(beerDTO.getName());
         if (optSavedBeer.isPresent()) {
             throw new BeerAlreadyRegisteredException(beerDTO.getName());
         }
     }
+
+    private void verifyIfExists(Long id) throws BeerNotFoundException {
+        beerRepository.findById(id)
+                .orElseThrow(() -> new BeerNotFoundException(id));
+    }
+
 }
