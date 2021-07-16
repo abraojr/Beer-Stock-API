@@ -21,6 +21,9 @@ public class Beer {
     private String name;
 
     @Column(nullable = false)
+    private String brand;
+
+    @Column(nullable = false)
     private int max;
 
     @Column(nullable = false)
