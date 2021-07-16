@@ -3,6 +3,7 @@ package dev.byAbrao.beerstock.service;
 import dev.byAbrao.beerstock.dto.BeerDTO;
 import dev.byAbrao.beerstock.entity.Beer;
 import dev.byAbrao.beerstock.exception.BeerAlreadyRegisteredException;
+import dev.byAbrao.beerstock.exception.BeerNotFoundException;
 import dev.byAbrao.beerstock.mapper.BeerMapper;
 import dev.byAbrao.beerstock.repository.BeerRepository;
 import lombok.AllArgsConstructor;
@@ -19,12 +20,22 @@ public class BeerService {
     private final BeerMapper beerMapper = BeerMapper.INSTANCE;
 
     public BeerDTO createBeer(BeerDTO beerDTO) throws BeerAlreadyRegisteredException {
+        verifyIfIsAlreadyRegistered(beerDTO);
+        Beer beer = beerMapper.toModel(beerDTO);
+        Beer savedBeer = beerRepository.save(beer);
+        return beerMapper.toDTO(savedBeer);
+    }
+
+    public BeerDTO findByName(String name) throws BeerNotFoundException {
+        Beer foundBeer = beerRepository.findByName(name)
+                .orElseThrow(()-> new BeerNotFoundException(name));
+        return beerMapper.toDTO(foundBeer);
+    }
+
+    private void verifyIfIsAlreadyRegistered(BeerDTO beerDTO) throws BeerAlreadyRegisteredException {
         Optional<Beer> optSavedBeer = beerRepository.findByName(beerDTO.getName());
         if (optSavedBeer.isPresent()) {
             throw new BeerAlreadyRegisteredException(beerDTO.getName());
         }
-        Beer beer = beerMapper.toModel(beerDTO);
-        Beer savedBeer = beerRepository.save(beer);
-        return beerMapper.toDTO(savedBeer);
     }
 }
