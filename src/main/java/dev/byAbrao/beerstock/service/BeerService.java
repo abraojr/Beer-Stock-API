@@ -4,6 +4,7 @@ import dev.byAbrao.beerstock.dto.BeerDTO;
 import dev.byAbrao.beerstock.entity.Beer;
 import dev.byAbrao.beerstock.exception.BeerAlreadyRegisteredException;
 import dev.byAbrao.beerstock.exception.BeerNotFoundException;
+import dev.byAbrao.beerstock.exception.BeerStockExceededException;
 import dev.byAbrao.beerstock.mapper.BeerMapper;
 import dev.byAbrao.beerstock.repository.BeerRepository;
 import lombok.AllArgsConstructor;
@@ -46,6 +47,28 @@ public class BeerService {
         beerRepository.deleteById(id);
     }
 
+    public BeerDTO increment(Long id, int quantityToIncrement) throws BeerNotFoundException, BeerStockExceededException {
+        Beer beerToIncrementStock = verifyIfExists(id);
+        int quantityAfterIncrement = quantityToIncrement + beerToIncrementStock.getQuantity();
+        if (quantityAfterIncrement <= beerToIncrementStock.getMax()) {
+            beerToIncrementStock.setQuantity(beerToIncrementStock.getQuantity() + quantityToIncrement);
+            Beer incrementedBeerStock = beerRepository.save(beerToIncrementStock);
+            return beerMapper.toDTO(incrementedBeerStock);
+        }
+        throw new BeerStockExceededException(id, quantityToIncrement);
+    }
+
+    public BeerDTO decrement(Long id, int quantityToDecrement) throws BeerNotFoundException, BeerStockExceededException {
+        Beer beerToDecrementStock = verifyIfExists(id);
+        int beerStockAfterDecremented = beerToDecrementStock.getQuantity() - quantityToDecrement;
+        if (beerStockAfterDecremented >= 0) {
+            beerToDecrementStock.setQuantity(beerStockAfterDecremented);
+            Beer decrementedBeerStock = beerRepository.save(beerToDecrementStock);
+            return beerMapper.toDTO(decrementedBeerStock);
+        }
+        throw new BeerStockExceededException(id, quantityToDecrement);
+    }
+
     private void verifyIfIsAlreadyRegistered(BeerDTO beerDTO) throws BeerAlreadyRegisteredException {
         Optional<Beer> optSavedBeer = beerRepository.findByName(beerDTO.getName());
         if (optSavedBeer.isPresent()) {
@@ -53,9 +76,8 @@ public class BeerService {
         }
     }
 
-    private void verifyIfExists(Long id) throws BeerNotFoundException {
-        beerRepository.findById(id)
+    private Beer verifyIfExists(Long id) throws BeerNotFoundException {
+        return beerRepository.findById(id)
                 .orElseThrow(() -> new BeerNotFoundException(id));
     }
-
 }
